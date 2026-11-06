@@ -1,0 +1,113 @@
+---
+name: paper2html
+description: 把学术论文（本地 PDF 或 arXiv 链接/ID）转成精美、可分享的交互式 HTML 阅读页：调用 paper2html_convert 生成单文件 HTML 并给出 DSH Web 预览地址，支持三套主题（dark_lab / clean_paper / neon_tech）、目录导航、KaTeX 公式与内嵌图表，不需要任何 API key；配置 DeepSeek key 时可额外生成 AI 摘要。用户说「论文转网页」「PDF 转 HTML」「arXiv 转阅读页」「论文排版」「把论文做成可分享页面」「论文阅读器」「这篇论文看起来太累」时使用。
+---
+
+# Paper2HTML
+
+把一篇论文变成**一份可以分享的交互式网页**：左侧目录 + 阅读模式切换 + 公式/图表渲染 + 三套主题。
+文件是单个 self-contained HTML（图片 base64 内嵌），可以直接发给同事、放进笔记、离线打开；
+在本机还能用 DSH Web 的 `/paper2html/` 预览服务直接看。
+
+## 边界
+
+- 只处理论文 PDF / arXiv；不负责 OCR（扫描件需要 OCR 或云端解析 key）。
+- 工具只做「确定性重活」（下载、解析、排版、落盘）；**论文内容的讲解、摘要、翻译由你基于原文完成**。
+- 默认无 key 可用（本地 PyMuPDF 解析 + 不生成 AI 摘要）；AI 摘要需要 DeepSeek key，属于可选项。
+
+## 工作流
+
+### 第 1 步：确认输入
+
+- **本地 PDF**：必须拿到绝对路径（用户只给了文件名就先用 `working_directory` / 文件系统找到它）。
+- **arXiv**：`https://arxiv.org/abs/1706.03762`、`https://arxiv.org/pdf/1706.03762`、纯 ID `1706.03762` 都可以。
+- 用户没有指明论文时，先问清楚是哪一篇，不要猜。
+
+### 第 2 步：调用 `paper2html_convert`
+
+```
+paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab" })
+```
+
+- `style` 不给就用 `dark_lab`；用户说「打印/分享用浅色」→ `clean_paper`，说「科技感/深紫」→ `neon_tech`。
+- `outputDir` 只有用户明确要求存到工作区某目录时才传（必须是绝对路径）。
+- `understand` 默认 false。**不要**默认打开；只有用户明确说「要 AI 摘要」且本机配了 DeepSeek key 时才传 true。
+- 转换通常 10–60 秒（首次可能需要装 Python 依赖，会慢一些）；超时是 300 秒。
+
+### 第 3 步：把结果告诉用户（这是交付的核心）
+
+从工具返回里拿：
+- `htmlPath`：HTML 文件路径（单文件，可直接分享）
+- `previewUrl`（或 `previewPath`）：DSH Web 里可直接打开的预览地址
+- `title` / `style` / `engine` / `pages` / `bytes`
+
+回复模板：
+
+> 已生成《<title>》的阅读页（<style> 主题，<pages> 页，<X> MB）：
+> - 预览：<previewUrl>
+> - 文件：`<htmlPath>`（单文件，可直接发给别人）
+>
+> 如需换主题（dark_lab / clean_paper / neon_tech）或加 AI 摘要（需 DeepSeek key），告诉我即可。
+
+### 第 4 步：按需讲解论文
+
+- 用户接着问论文内容时，**直接基于你已经读到的正文回答**；需要细节再用 `pdf` skill / `read` 工具读 PDF 或 HTML，不要把整篇 HTML 塞回对话。
+- 工具返回的 `engine` 说明解析方式：`local` = 本机 PyMuPDF；`doc2x` / `pdf2x` = 云端解析（用户配了 key）。
+- 本地解析的公式/表格还原有限（见 `references/local-parser.md`）；用户抱怨公式或表格错乱时，建议配置 Doc2X/PDF2X key 后重转。
+
+## 三种主题
+
+| 主题 | 风格 | 适用 |
+|---|---|---|
+| `dark_lab`（默认） | 深色背景 + 绿色强调 | 夜间阅读、自己看 |
+| `clean_paper` | 白底 + 学术蓝 | 打印、正式分享、嵌入笔记 |
+| `neon_tech` | 深紫 + 霓虹 | 演示、科技感展示 |
+
+详见 `references/style-presets.md`。
+
+## 有没有 key 的差别
+
+| 能力 | 无 key（默认） | 有 DeepSeek key | 有 Doc2X/PDF2X key |
+|---|---|---|---|
+| 解析 | 本地 PyMuPDF | 同左 | 云端高保真解析（公式/表格/版式更好） |
+| 排版/主题/目录/图片 | ✅ | ✅ | ✅ |
+| TL;DR / 关键发现 / 章节摘要 | ❌（页面仍完整可读） | ✅ | 取决于是否配 |
+| 扫描件 OCR | ❌ | ❌ | ✅ |
+
+- 配置方式（**不要让用户把 key 贴在对话里**）：环境变量 `DEEPSEEK_APIKEY` / `DOC2X_APIKEY` / `PDF2X_APIKEY`，
+  或写入 `$DSH_HOME/paper2html/config.json`：
+  ```json
+  { "deepseekKey": "sk-...", "doc2xKey": "sk-..." }
+  ```
+- 用户问「为什么没有 AI 摘要」→ 解释默认无 key 模式；按上面方式配置后重跑并带上 `understand: true`。
+- 配置细节见 `references/api-keys.md`。
+
+## 失败兜底
+
+| 工具报错关键词 | 你该做什么 |
+|---|---|
+| `需要 Python` / `pip install` / `venv` | 把报错里的手动命令原样给用户；或让用户装好 `pymupdf markdown` 后设 `PAPER2HTML_PYTHON` |
+| `扫描件` / `没有可提取的文本层` | 说明本地模式不支持 OCR；建议换 arXiv 版本、先用 OCR 工具处理，或配置 Doc2X key |
+| `arXiv 下载失败` | 检查 ID/网络，换 `https://export.arxiv.org/abs/<id>` 重试 |
+| `超时` | 建议先换 `clean_paper` 不是解法；应拆分/压缩 PDF，或改用 arXiv 版 |
+| `PDF 已加密` | 让用户解密后再转，或配 Doc2X key |
+| `understand=true 需要 DeepSeek key` | 改回 `understand: false`，或引导用户配置 key |
+
+不要把原始报错直接甩给用户：先翻译成「发生了什么 + 下一步怎么做」。
+详见 `references/troubleshooting.md`。
+
+## 交付前自查
+
+- [ ] 工具返回的 `htmlPath` 文件存在，且 `title` 不是 `Untitled Paper`（是的话说明 PDF 元数据怪，可提醒用户）
+- [ ] 回复里同时给了 **预览地址** 和 **文件路径**
+- [ ] 没有把大段正文塞进工具参数/返回；讲解内容在对话里写
+- [ ] 用户没要求时没有打开 `understand`，也没有让用户贴 key
+- [ ] 提到数据位置时用 `$DSH_HOME/paper2html/`（默认 `~/.dsh/paper2html/`）
+
+## references
+
+- `references/local-parser.md` —— 本地解析的能力边界（公式/表格/双栏/扫描件），以及什么时候该建议用云端解析
+- `references/style-presets.md` —— 三套主题的视觉细节与选择建议
+- `references/cli-options.md` —— 工具参数 + 内置 Python CLI 参数（高级排查/手动重转用）
+- `references/api-keys.md` —— DeepSeek / Doc2X / PDF2X key 从哪来、怎么配、云端解析与理解层的行为
+- `references/troubleshooting.md` —— 常见错误与处理

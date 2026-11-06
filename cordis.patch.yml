@@ -1,0 +1,6 @@
+# dsh-paper2html：Host 半边（工具 paper2html_convert / paper2html_status，
+# 随包 skill paper2html，/paper2html/ 只读预览服务）。
+# 由 package.json 的 dsh.bundle.patch 引入。
+- insert:
+    - id: paper2html
+      name: 'dsh-paper2html'

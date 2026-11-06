@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Paper2HTML",
+    "description": "Convert academic papers (local PDF or arXiv) into polished, shareable interactive HTML reading pages with three themes, navigation, formulas and figures. No API key required; optional AI summaries with a DeepSeek key."
+  }
+}

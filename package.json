@@ -1,0 +1,54 @@
+{
+  "name": "dsh-paper2html",
+  "version": "0.1.0",
+  "description": "Paper2HTML for DeepSeek Harness: turn academic PDFs or arXiv papers into interactive, shareable HTML reading pages — no API key required.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "icon": "./icon.svg",
+  "files": [
+    "lib",
+    "python",
+    "skills",
+    "scripts",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "paper2html",
+    "arxiv",
+    "pdf",
+    "academic",
+    "html"
+  ],
+  "author": "rubyzhao666",
+  "license": "MIT",
+  "homepage": "https://github.com/rubyzhao666/dsh-paper2html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rubyzhao666/dsh-paper2html.git"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  }
+}

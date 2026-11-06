@@ -1,0 +1,13 @@
+# paper2html 最小依赖（DSH 插件本地模式）
+#
+# 本地无 key 模式只需要这三个包：
+#   pymupdf   本地 PDF 解析（标题/正文/图片）
+#   markdown  Markdown → HTML（上游渲染层使用）
+#   requests  arXiv 下载（本地 PDF 不需要；纯离线可去掉）
+#
+# 云端能力（Doc2X / PDF2X / DeepSeek）为可选：
+#   pip install pdfdeal openai
+#
+pymupdf>=1.24.0
+markdown>=3.5
+requests>=2.28.0
