@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Paper2HTML 论文阅读器",
-    "description": "把学术论文（本地 PDF 或 arXiv）转成精美、可分享的交互式 HTML 阅读页：三套主题、目录导航、公式与图表。无需任何 API key；配置 DeepSeek key 可额外生成 AI 摘要。"
+    "description": "Ruby 出品 · DSH 插件：把学术论文（本地 PDF 或 arXiv）转成精美、可分享的交互式 HTML 阅读页：三套主题、目录导航、公式与图表。无需任何 API key；配置 DeepSeek key 可额外生成 AI 摘要。"
   }
 }
