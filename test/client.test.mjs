@@ -57,10 +57,10 @@ test('client.js 静态契约：ModuleLoader / slot / iframe / 无外部资源', 
     'exports.apply = apply',
     "ctx.slots.inject('sidebar.panellist'",
     "name: 'sidebar.panellist', id: 'paper2html', order: 8",
-    "label: () => '论文阅读'",
+    "label: () => 'Paper2HTML'",
     "name: 'main', key: 'paper2html'",
     "src: '/paper2html/'",
-    "title: 'Paper2HTML 论文阅读'",
+    "title: 'Paper2HTML'",
     "'svg'",
   ]
   for (const needle of required) {
@@ -104,7 +104,7 @@ test('client.js 加载后：isPlugin / inject / apply 注册 sidebar + main 两�
   assert.ok(sidebar, '缺少 sidebar.panellist 注册')
   assert.equal(sidebar.meta.id, 'paper2html')
   assert.equal(sidebar.meta.order, 8)
-  assert.equal(sidebar.meta.label(), '论文阅读')
+  assert.equal(sidebar.meta.label(), 'Paper2HTML')
   assert.equal(typeof sidebar.component, 'function')
   const icon = sidebar.component({ size: 20 })
   assert.equal(icon.tag, 'svg')
@@ -120,7 +120,7 @@ test('client.js 加载后：isPlugin / inject / apply 注册 sidebar + main 两�
   const panel = main.component({})
   assert.equal(panel.tag, 'iframe')
   assert.equal(panel.props.src, '/paper2html/')
-  assert.equal(panel.props.title, 'Paper2HTML 论文阅读')
+  assert.equal(panel.props.title, 'Paper2HTML')
   assert.equal(panel.props.style.width, '100%')
   assert.equal(panel.props.style.height, '100%')
   assert.equal(panel.props.style.border, 0)

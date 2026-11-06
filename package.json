@@ -1,6 +1,6 @@
 {
   "name": "dsh-paper2html",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "By Ruby · DSH plugin: Paper2HTML for DeepSeek Harness: turn academic PDFs or arXiv papers into interactive, shareable HTML reading pages — no API key required.",
   "type": "module",
   "main": "lib/index.js",
