@@ -62,8 +62,9 @@ test('HTTP：首页 / 登记条目 / 导出目录直链 / 404 / 405', async () =
     assert.equal(index.status, 200)
     assert.match(index.headers.get('content-type'), /text\/html/)
     const indexHtml = await index.text()
-    assert.match(indexHtml, /Paper2HTML 预览/)
-    assert.match(indexHtml, /Hello Paper/)
+    assert.match(indexHtml, /Paper2HTML 论文库/)
+    assert.match(indexHtml, /id="p2h-grid"/)
+    assert.ok(!indexHtml.includes('Hello Paper'), '0.5.0 起论文列表由前端 fetch /api/exports 渲染，不再服务端拼接')
 
     const byId = await fetch(`http://127.0.0.1:${port}/paper2html/p/${id}`)
     assert.equal(byId.status, 200)
@@ -95,6 +96,9 @@ test('HTTP：首页 / 登记条目 / 导出目录直链 / 404 / 405', async () =
     const payload = await exportsJson.json()
     assert.ok(Array.isArray(payload.entries))
     assert.ok(payload.files.some((item) => item.name === 'paper.html'))
+    for (const entry of payload.entries) {
+      assert.equal(typeof entry.annotations, 'number', '每篇应带 annotations 计数')
+    }
   } finally {
     await new Promise((resolve) => server.close(resolve))
   }

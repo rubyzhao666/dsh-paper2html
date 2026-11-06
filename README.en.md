@@ -19,7 +19,7 @@ optional high-fidelity cloud parsing (formulas, tables, scanned PDFs).
 | In-page annotations / highlights | "✍️ 批注" button in the corner: select text to highlight in 4 colors or write a note; sidebar lists notes in document order; survives reload |
 | Export with annotations | "导出带批注版" downloads `<name>-annotated.html` with annotations embedded; recipients see them on open, can add their own, and re-export merged |
 | Annotation sync & agent access | Annotations made in a DSH Web preview page (http) sync to the host (`$DSH_HOME/paper2html/annotations/`), and the agent can read them with `paper2html_annotations` to summarize or answer questions |
-| Sidebar "论文阅读" entry | A "📄 论文阅读" entry appears in the DSH Web sidebar; it opens the paper library page (`/paper2html/`) with converted papers, preview links and synced annotations |
+| Sidebar "Paper2HTML" library | A "Paper2HTML" entry in the DSH Web sidebar opens a theme-aware paper library single-page app: stats (N papers · M annotations), search / theme filter / sort, card grid (theme gradient bar, pages/size/time/annotation count), open reader / copy link / copy path, and a "convert a new paper" button |
 | DSH Web preview | plugin registers a read-only `/paper2html/` route and returns a preview link |
 | Works without keys | local parsing + no AI summary by default; layout/TOC/figures are complete |
 | Stronger with keys | DeepSeek → TL;DR / key findings / section summaries (built-in stdlib HTTP client, no extra openai install); Doc2X/PDF2X → high-fidelity parsing incl. OCR |
@@ -31,7 +31,7 @@ Install the plugin through DeepSeek Harness (`plugin_manager` or a local-directo
 - tools `paper2html_convert`, `paper2html_status` and `paper2html_annotations` are available;
 - skill `paper2html` shows up in the skill list;
 - the `/paper2html/` preview route is registered;
-- a **"📄 论文阅读" entry appears in the DSH Web sidebar**, opening the paper library page (`/paper2html/`).
+- a **"Paper2HTML" entry appears in the DSH Web sidebar**, opening the paper library single-page app (`/paper2html/`).
 
 > The sidebar entry is part of the browser/client half: after installing or updating the plugin you must
 > **restart DSH** (or reload the Web UI) for it to appear. Other capabilities (tools, skill, preview route)
@@ -42,6 +42,20 @@ Install the plugin through DeepSeek Harness (`plugin_manager` or a local-directo
 requirements (about 50 MB, one-time). If installation fails, the error includes manual commands.
 
 ## Usage
+
+### Paper library (sidebar entry)
+
+Click **Paper2HTML** in the DSH Web sidebar to open the paper library (no commands to remember):
+
+- **Top bar**: `N papers · M annotations`; "＋ 转换新论文" opens a new session with a prefilled prompt (just add the
+  PDF path or arXiv link), and "刷新" reloads the list.
+- **Toolbar**: search by title (press `/` to focus), filter by theme (All / Dark Lab / Clean Paper / Neon Tech),
+  sort by time or page count.
+- **Cards**: theme gradient bar + title + theme/pages/size/created/annotation count; actions: open reader,
+  copy link, copy file path.
+- Follows the DSH light/dark theme (light by default, dark pushed by the client); collapses to one column on
+  narrow screens. Data comes from `$DSH_HOME/paper2html/exports` and the local annotation store — the page makes
+  no external requests.
 
 ### Just say it (no tool names needed)
 

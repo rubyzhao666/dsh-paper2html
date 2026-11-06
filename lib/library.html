@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Paper2HTML 论文库</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --panel: #ffffff;
+    --panel-2: #fbfaf7;
+    --text: #1c1a17;
+    --muted: #6f685c;
+    --line: #e7e1d5;
+    --shadow: 0 1px 2px rgba(28, 26, 23, 0.05), 0 8px 24px rgba(28, 26, 23, 0.06);
+    --accent: #7c3aed;
+    --accent-2: #2563eb;
+    --accent-soft: rgba(124, 58, 237, 0.1);
+    --ok: #15803d;
+    --warn: #b45309;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  html[data-theme="dark"] {
+    --bg: #0d1017;
+    --panel: #141a24;
+    --panel-2: #10151d;
+    --text: #e8edf6;
+    --muted: #9aa7bd;
+    --line: #232c3d;
+    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+    --accent-soft: rgba(124, 58, 237, 0.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 1280px; margin: 0 auto; padding: 22px 26px 64px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; box-shadow: var(--shadow);
+  }
+  .brand h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: 0.2px; }
+  .subtitle { margin: 1px 0 0; color: var(--muted); font-size: 12.5px; }
+  .topbar-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; box-shadow: var(--shadow); }
+  .btn.ghost { background: var(--panel-2); }
+  .btn.small { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+  .toolbar {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px;
+    margin-bottom: 18px; padding: 12px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .search-wrap { position: relative; flex: 1 1 260px; min-width: 200px; display: flex; align-items: center; }
+  .search-wrap svg { position: absolute; left: 11px; color: var(--muted); pointer-events: none; }
+  .search {
+    width: 100%; appearance: none; border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font: inherit; font-size: 13px; padding: 9px 12px 9px 34px;
+    border-radius: var(--radius-sm); outline: none; transition: border-color 0.15s ease;
+  }
+  .search:focus { border-color: var(--accent); }
+  .search::placeholder { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    appearance: none; border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--muted); font: inherit; font-size: 12.5px; padding: 6px 12px;
+    border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .chip .count { opacity: 0.72; font-size: 11px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-dark { background: linear-gradient(135deg, #7c3aed, #2563eb); }
+  .dot-clean { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+  .dot-neon { background: linear-gradient(135deg, #ec4899, #7c3aed); }
+  .sort-wrap { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12.5px; }
+  .select {
+    appearance: none; border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); font: inherit; font-size: 12.5px; padding: 7px 26px 7px 10px;
+    border-radius: 8px; cursor: pointer; outline: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .card {
+    position: relative; display: flex; flex-direction: column; gap: 10px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 16px 14px; box-shadow: var(--shadow); overflow: hidden;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .card[data-style="dark_lab"]::before { background: linear-gradient(90deg, #7c3aed, #2563eb); }
+  .card[data-style="clean_paper"]::before { background: linear-gradient(90deg, #0ea5e9, #2563eb); }
+  .card[data-style="neon_tech"]::before { background: linear-gradient(90deg, #ec4899, #7c3aed); }
+  .card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 2px 4px rgba(28, 26, 23, 0.06), 0 16px 38px rgba(28, 26, 23, 0.1); }
+  html[data-theme="dark"] .card:hover { box-shadow: 0 0 0 1px var(--accent), 0 16px 38px rgba(0, 0, 0, 0.45); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 4px; }
+  .card-title {
+    margin: 0; font-size: 15.5px; font-weight: 600; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  .badge {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--panel-2);
+    white-space: nowrap;
+  }
+  .badge.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .badge.ok { border-color: rgba(21, 128, 61, 0.35); color: var(--ok); background: rgba(21, 128, 61, 0.08); }
+  .badge.muted { color: var(--muted); }
+  .card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 7px; color: var(--muted); font-size: 12px; }
+  .card-meta .sep { opacity: 0.5; }
+  .card-file {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85;
+  }
+  .card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+  .card-actions .btn { text-decoration: none; display: inline-flex; align-items: center; }
+  .card-actions .spacer { flex: 1 1 auto; }
+  .empty { margin: 46px auto; max-width: 560px; text-align: center; color: var(--muted); }
+  .empty .empty-icon { font-size: 34px; line-height: 1; margin-bottom: 12px; }
+  .empty h2 { margin: 0 0 8px; color: var(--text); font-size: 17px; font-weight: 600; }
+  .empty p { margin: 6px 0; font-size: 13.5px; }
+  .empty code {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    background: var(--accent-soft); padding: 4px 8px; border-radius: 7px; display: inline-block;
+    max-width: 100%; overflow-wrap: anywhere;
+  }
+  .empty .btn { margin-top: 14px; }
+  .empty.error h2 { color: var(--warn); }
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 14px);
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 999px; padding: 10px 18px; font-size: 13px; box-shadow: var(--shadow);
+    z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    max-width: min(90vw, 560px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.warn { border-color: rgba(180, 83, 9, 0.5); color: var(--warn); }
+  .toast.ok { border-color: var(--accent); }
+  .skeleton {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; min-height: 158px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .skeleton .bar {
+    height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, var(--panel-2) 37%, var(--line) 63%);
+    background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
+  }
+  .skeleton .bar.w60 { width: 60%; }
+  .skeleton .bar.w40 { width: 40%; }
+  .skeleton .bar.w80 { width: 80%; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @media (max-width: 720px) {
+    .app { padding: 16px 14px 48px; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .topbar-actions { width: 100%; }
+    .topbar-actions .btn { flex: 1 1 auto; justify-content: center; text-align: center; }
+    .toolbar { align-items: stretch; }
+    .search-wrap { flex-basis: 100%; }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="paper-app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 3v5h5"></path>
+          <path d="M9 12h6"></path>
+          <path d="M9 16h6"></path>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1>Paper2HTML</h1>
+        <p class="subtitle" id="p2h-stat">论文库 · 正在加载…</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn primary" id="p2h-convert" type="button">＋ 转换新论文</button>
+      <button class="btn ghost" id="p2h-refresh" type="button">刷新</button>
+    </div>
+  </header>
+
+  <section class="toolbar" aria-label="搜索、筛选与排序">
+    <label class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path>
+      </svg>
+      <input id="p2h-search" class="search" type="search" placeholder="搜索论文标题…（按 / 聚焦）" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="chips" id="p2h-chips" role="group" aria-label="按主题筛选">
+      <button class="chip" type="button" data-style="all" aria-pressed="true">全部 <span class="count" data-count="all">0</span></button>
+      <button class="chip" type="button" data-style="dark_lab" aria-pressed="false"><span class="dot dot-dark"></span>Dark Lab <span class="count" data-count="dark_lab">0</span></button>
+      <button class="chip" type="button" data-style="clean_paper" aria-pressed="false"><span class="dot dot-clean"></span>Clean Paper <span class="count" data-count="clean_paper">0</span></button>
+      <button class="chip" type="button" data-style="neon_tech" aria-pressed="false"><span class="dot dot-neon"></span>Neon Tech <span class="count" data-count="neon_tech">0</span></button>
+    </div>
+    <label class="sort-wrap">排序
+      <select id="p2h-sort" class="select">
+        <option value="time-desc">时间（新→旧）</option>
+        <option value="pages-desc">页数（多→少）</option>
+      </select>
+    </label>
+  </section>
+
+  <main>
+    <div id="p2h-grid" class="grid" aria-live="polite"></div>
+    <div id="p2h-empty" class="empty" hidden></div>
+    <div id="p2h-error" class="empty error" hidden></div>
+  </main>
+
+  <div id="p2h-toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var REPO_BASE = '/paper2html';
+  var state = {
+    entries: [],
+    style: 'all',
+    query: '',
+    sort: 'time-desc',
+    loading: true,
+    error: '',
+    theme: null
+  };
+  var toastTimer = null;
+
+  function byId(id) { return document.getElementById(id); }
+  function make(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+  function isTypingTarget(target) {
+    if (!target) return false;
+    var tag = String(target.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable === true;
+  }
+  function postToParent(data) {
+    try { window.parent.postMessage(data, window.location.origin); } catch (err) { /* 允许在没有 parent 的预览里独立打开 */ }
+  }
+  function startSession(prompt, label) {
+    postToParent({ type: 'paper2html:start-session', prompt: String(prompt || ''), label: label || '' });
+  }
+  function applyTheme(scheme) {
+    if (scheme !== 'light' && scheme !== 'dark') return;
+    state.theme = scheme;
+    document.documentElement.setAttribute('data-theme', scheme);
+  }
+  function fallbackTheme() {
+    if (state.theme) return;
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+    } catch (err) { /* ignore */ }
+  }
+  function toast(message, kind) {
+    var node = byId('p2h-toast');
+    if (!node) return;
+    node.textContent = String(message || '');
+    node.className = 'toast show' + (kind === 'warn' ? ' warn' : kind === 'ok' ? ' ok' : '');
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () {
+      node.className = 'toast';
+    }, 2400);
+  }
+  function formatBytes(bytes) {
+    var n = Number(bytes) || 0;
+    if (n <= 0) return '—';
+    if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' MB';
+    if (n >= 1024) return Math.round(n / 1024) + ' KB';
+    return n + ' B';
+  }
+  function relativeTime(iso) {
+    if (!iso) return '—';
+    var time = Date.parse(iso);
+    if (isNaN(time)) return String(iso);
+    var diff = Date.now() - time;
+    if (diff < 0) diff = 0;
+    var minute = 60 * 1000;
+    var hour = 60 * minute;
+    var day = 24 * hour;
+    if (diff < minute) return '刚刚';
+    if (diff < hour) return Math.floor(diff / minute) + ' 分钟前';
+    if (diff < day) return Math.floor(diff / hour) + ' 小时前';
+    if (diff < 30 * day) return Math.floor(diff / day) + ' 天前';
+    var date = new Date(time);
+    var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+  }
+  var STYLE_LABELS = { dark_lab: 'Dark Lab', clean_paper: 'Clean Paper', neon_tech: 'Neon Tech' };
+  function styleLabel(style) { return STYLE_LABELS[style] || (style ? String(style) : '未知主题'); }
+  function isValidEntry(entry) {
+    return !!(entry && typeof entry === 'object' && /^[a-f0-9]{12}$/.test(String(entry.id || '')));
+  }
+  function visibleEntries() {
+    var query = state.query.trim().toLowerCase();
+    var list = state.entries.filter(function (entry) {
+      if (!isValidEntry(entry)) return false;
+      if (state.style !== 'all' && String(entry.style || '') !== state.style) return false;
+      if (query) {
+        var haystack = String(entry.title || '') + ' ' + String(entry.name || '') + ' ' + String(entry.file || '');
+        if (haystack.toLowerCase().indexOf(query) === -1) return false;
+      }
+      return true;
+    });
+    list.sort(function (a, b) {
+      if (state.sort === 'pages-desc') {
+        var diff = (Number(b.pages) || 0) - (Number(a.pages) || 0);
+        if (diff !== 0) return diff;
+      }
+      var at = Date.parse(a.updatedAt || '') || 0;
+      var bt = Date.parse(b.updatedAt || '') || 0;
+      return bt - at;
+    });
+    return list;
+  }
+  function totalAnnotations() {
+    return state.entries.reduce(function (sum, entry) {
+      return sum + (Number(entry.annotations) || 0);
+    }, 0);
+  }
+  function countByStyle(style) {
+    return state.entries.filter(function (entry) {
+      return isValidEntry(entry) && (style === 'all' || String(entry.style || '') === style);
+    }).length;
+  }
+
+  function renderStat() {
+    var node = byId('p2h-stat');
+    if (!node) return;
+    if (state.loading) { node.textContent = '论文库 · 正在加载…'; return; }
+    if (state.error) { node.textContent = '论文库 · 加载失败'; return; }
+    node.textContent = '论文库 · ' + state.entries.length + ' 篇 · 共 ' + totalAnnotations() + ' 批注';
+  }
+
+  function renderChips() {
+    var chips = document.querySelectorAll('#p2h-chips .chip');
+    Array.prototype.forEach.call(chips, function (chip) {
+      var style = chip.getAttribute('data-style') || 'all';
+      chip.setAttribute('aria-pressed', style === state.style ? 'true' : 'false');
+      var counter = chip.querySelector('[data-count]');
+      if (counter) counter.textContent = String(countByStyle(style));
+    });
+  }
+
+  function buildSkeletonCard() {
+    var card = make('div', 'skeleton');
+    card.appendChild(make('div', 'bar w60'));
+    card.appendChild(make('div', 'bar w80'));
+    card.appendChild(make('div', 'bar w40'));
+    card.appendChild(make('div', 'bar'));
+    return card;
+  }
+
+  function buildCard(entry) {
+    var id = String(entry.id);
+    var card = make('article', 'card');
+    card.setAttribute('data-id', id);
+    card.setAttribute('data-style', String(entry.style || ''));
+
+    var head = make('div', 'card-head');
+    var title = make('h3', 'card-title', entry.title || entry.name || '未命名论文');
+    title.title = String(entry.title || entry.name || '');
+    head.appendChild(title);
+    var styleBadge = make('span', 'badge accent', styleLabel(entry.style));
+    head.appendChild(styleBadge);
+    card.appendChild(head);
+
+    var meta = make('div', 'card-meta');
+    var annotations = Number(entry.annotations) || 0;
+    if (annotations > 0) {
+      meta.appendChild(make('span', 'badge ok', '批注 ' + annotations));
+    }
+    if (entry.pages) {
+      meta.appendChild(make('span', '', entry.pages + ' 页'));
+      meta.appendChild(make('span', 'sep', '·'));
+    }
+    meta.appendChild(make('span', '', formatBytes(entry.bytes)));
+    meta.appendChild(make('span', 'sep', '·'));
+    meta.appendChild(make('span', '', relativeTime(entry.updatedAt)));
+    card.appendChild(meta);
+
+    var file = make('div', 'card-file', entry.file || '');
+    file.title = String(entry.file || '');
+    card.appendChild(file);
+
+    var actions = make('div', 'card-actions');
+    var open = make('a', 'btn primary small', '打开阅读页');
+    open.href = REPO_BASE + '/p/' + encodeURIComponent(id);
+    open.target = '_blank';
+    open.rel = 'noopener';
+    actions.appendChild(open);
+
+    var copyLink = make('button', 'btn ghost small', '复制链接');
+    copyLink.type = 'button';
+    copyLink.setAttribute('data-action', 'copy-link');
+    copyLink.addEventListener('click', function () {
+      copyText(window.location.origin + REPO_BASE + '/p/' + id, '链接已复制');
+    });
+    actions.appendChild(copyLink);
+
+    var copyPath = make('button', 'btn ghost small', '复制文件路径');
+    copyPath.type = 'button';
+    copyPath.setAttribute('data-action', 'copy-path');
+    copyPath.addEventListener('click', function () {
+      copyText(String(entry.file || ''), '文件路径已复制');
+    });
+    actions.appendChild(copyPath);
+    card.appendChild(actions);
+    return card;
+  }
+
+  function copyText(text, okMessage) {
+    var value = String(text || '');
+    if (!value) { toast('没有可复制的内容', 'warn'); return; }
+    function done() { toast(okMessage || '已复制'); }
+    function fallback() {
+      try {
+        var area = document.createElement('textarea');
+        area.value = value;
+        area.setAttribute('readonly', 'readonly');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+        done();
+      } catch (err) {
+        toast('复制失败：' + (err && err.message ? err.message : '浏览器不支持'), 'warn');
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function renderEmpty(message, isError) {
+    var empty = byId('p2h-empty');
+    var errorBox = byId('p2h-error');
+    if (!empty || !errorBox) return;
+    empty.hidden = true;
+    errorBox.hidden = true;
+    if (isError) {
+      errorBox.textContent = '';
+      var icon = make('div', 'empty-icon', '⚠️');
+      errorBox.appendChild(icon);
+      var heading = make('h2', '', '加载论文库失败');
+      errorBox.appendChild(heading);
+      var desc = make('p', '', String(message || '未知错误'));
+      errorBox.appendChild(desc);
+      var retry = make('button', 'btn primary', '重试');
+      retry.type = 'button';
+      retry.addEventListener('click', function () { fetchData(); });
+      errorBox.appendChild(retry);
+      errorBox.hidden = false;
+      return;
+    }
+    if (!message) return;
+    empty.textContent = '';
+    empty.appendChild(make('div', 'empty-icon', '📄'));
+    empty.appendChild(make('h2', '', message.title || ''));
+    (message.lines || []).forEach(function (line) {
+      empty.appendChild(make('p', '', line));
+    });
+    if (message.code) {
+      empty.appendChild(make('code', '', message.code));
+    }
+    if (message.action) {
+      var button = make('button', 'btn primary', message.action);
+      button.type = 'button';
+      button.addEventListener('click', function () { openConvertSession(); });
+      empty.appendChild(button);
+    }
+    empty.hidden = false;
+  }
+
+  function renderGrid() {
+    var grid = byId('p2h-grid');
+    var empty = byId('p2h-empty');
+    var errorBox = byId('p2h-error');
+    if (!grid || !empty || !errorBox) return;
+    renderStat();
+    renderChips();
+    grid.textContent = '';
+
+    if (state.loading) {
+      empty.hidden = true;
+      errorBox.hidden = true;
+      for (var i = 0; i < 6; i += 1) grid.appendChild(buildSkeletonCard());
+      return;
+    }
+    if (state.error) {
+      grid.hidden = true;
+      renderEmpty(state.error, true);
+      return;
+    }
+    grid.hidden = false;
+
+    var list = visibleEntries();
+    if (!list.length) {
+      if (!state.entries.length) {
+        renderEmpty({
+          title: '还没有转换过的论文',
+          lines: ['对 DSH 说：'],
+          code: '把这篇文章转成阅读页：https://arxiv.org/abs/…',
+          action: '转换新论文'
+        });
+      } else {
+        renderEmpty({ title: '没有匹配的论文', lines: ['试试清空搜索，或切换主题筛选。'] });
+      }
+      return;
+    }
+    empty.hidden = true;
+    errorBox.hidden = true;
+    list.forEach(function (entry) {
+      grid.appendChild(buildCard(entry));
+    });
+  }
+
+  function openConvertSession() {
+    startSession('把这篇论文转成阅读页：<在这里粘贴论文 PDF 路径或 arXiv 链接>', '转换新论文');
+    toast('已把「转换新论文」发到新会话，补上链接即可');
+  }
+
+  function fetchData() {
+    state.loading = true;
+    state.error = '';
+    renderGrid();
+    window.fetch(REPO_BASE + '/api/exports', { cache: 'no-store' }).then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    }).then(function (data) {
+      var entries = data && Array.isArray(data.entries) ? data.entries : [];
+      state.entries = entries.map(function (entry) {
+        return {
+          id: entry && entry.id,
+          title: entry && entry.title,
+          name: entry && entry.name,
+          style: entry && entry.style,
+          pages: entry && entry.pages,
+          bytes: entry && entry.bytes,
+          updatedAt: entry && entry.updatedAt,
+          file: entry && entry.file,
+          annotations: entry && entry.annotations
+        };
+      }).filter(isValidEntry);
+      state.loading = false;
+      renderGrid();
+    }).catch(function (error) {
+      state.loading = false;
+      state.error = (error && error.message) ? error.message : '网络或服务异常';
+      renderGrid();
+    });
+  }
+
+  function bindEvents() {
+    var refresh = byId('p2h-refresh');
+    if (refresh) {
+      refresh.addEventListener('click', function () {
+        fetchData();
+        toast('正在刷新…');
+      });
+    }
+    var convert = byId('p2h-convert');
+    if (convert) convert.addEventListener('click', openConvertSession);
+
+    var search = byId('p2h-search');
+    if (search) {
+      search.addEventListener('input', function () {
+        state.query = search.value || '';
+        renderGrid();
+      });
+    }
+    var chips = byId('p2h-chips');
+    if (chips) {
+      chips.addEventListener('click', function (event) {
+        var chip = event.target && event.target.closest ? event.target.closest('.chip') : null;
+        if (!chip) return;
+        var style = chip.getAttribute('data-style') || 'all';
+        state.style = style;
+        renderGrid();
+      });
+    }
+    var sort = byId('p2h-sort');
+    if (sort) {
+      sort.addEventListener('change', function () {
+        state.sort = sort.value === 'pages-desc' ? 'pages-desc' : 'time-desc';
+        renderGrid();
+      });
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !isTypingTarget(event.target)) {
+        event.preventDefault();
+        if (search) search.focus();
+      }
+      if (event.key === 'Escape' && document.activeElement === search) {
+        search.value = '';
+        state.query = '';
+        renderGrid();
+      }
+    });
+    window.addEventListener('message', function (event) {
+      if (event.origin !== window.location.origin) return;
+      var data = event.data;
+      if (!data || typeof data.type !== 'string') return;
+      if (data.type === 'paper2html:theme') {
+        applyTheme(data.scheme);
+      } else if (data.type === 'paper2html:session-started') {
+        toast('已在新会话里填入提示词，补完发送即可', 'ok');
+      } else if (data.type === 'paper2html:session-failed') {
+        toast('打开新会话失败：' + (data.message || '未知原因'), 'warn');
+      }
+    });
+  }
+
+  function init() {
+    bindEvents();
+    fallbackTheme();
+    renderGrid();
+    postToParent({ type: 'paper2html:ready' });
+    fetchData();
+    window.__PAPER2HTML_READY__ = true;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
