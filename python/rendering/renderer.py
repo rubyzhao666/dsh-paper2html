@@ -65,7 +65,9 @@ class PaperRenderer:
         self,
         parse_result: Any,
         understanding_result: Any,
-        output_path: str
+        output_path: str,
+        doc_id: Optional[str] = None,
+        file_name: Optional[str] = None,
     ) -> str:
         """
         渲染为HTML文件
@@ -85,6 +87,8 @@ class PaperRenderer:
                                   - structured: 结构化信息字典
                                   - mermaid_code: Mermaid图代码
             output_path: 输出HTML文件路径
+            doc_id: 页面批注用的稳定文档 id（可选；同一论文重转保持一致，注入 localStorage key）
+            file_name: 源文件名（可选；作为「导出带批注版」下载文件名前缀）
             
         Returns:
             生成的HTML文件路径
@@ -147,6 +151,15 @@ class PaperRenderer:
             experiment_table=experiment_table
         )
         
+        # 注入页面内批注/高亮能力（F3）：纯前端、无网络、无新依赖
+        from .annotations import inject_annotation_assets
+
+        html = inject_annotation_assets(
+            html,
+            doc_id=doc_id,
+            file_name=file_name or Path(output_path).stem,
+        )
+
         # 写入文件
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)

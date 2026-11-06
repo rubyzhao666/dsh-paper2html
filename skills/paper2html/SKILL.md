@@ -14,6 +14,8 @@ description: 把学术论文（本地 PDF 或 arXiv 链接/ID）转成精美、�
 - 只处理论文 PDF / arXiv；不负责 OCR（扫描件需要 OCR 或云端解析 key）。
 - 工具只做「确定性重活」（下载、解析、排版、落盘）；**论文内容的讲解、摘要、翻译由你基于原文完成**。
 - 默认无 key 可用（本地 PyMuPDF 解析 + 不生成 AI 摘要）；AI 摘要需要 DeepSeek key，属于可选项。
+- 生成页面自带**页面内批注/高亮**（纯前端、离线可用）。批注存在用户浏览器的 localStorage 里，**你读不到、也改不了**；
+  用户要把批注分享给别人，走页面里的「导出带批注版」。工具参数没有变化。
 
 ## 工作流
 
@@ -47,9 +49,24 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
 > - 预览：<previewUrl>
 > - 文件：`<htmlPath>`（单文件，可直接发给别人）
 >
+> 页面右下角有「✍️ 批注」：选中正文可高亮/写批注；「导出带批注版」会把批注内嵌进文件发给别人。
+>
 > 如需换主题（dark_lab / clean_paper / neon_tech）或加 AI 摘要（需 DeepSeek key），告诉我即可。
 
-### 第 4 步：按需讲解论文
+### 第 4 步：用户问起批注时
+
+页面批注是生成页面自带的能力，不需要调用任何工具。用户常见的三个问题：
+
+- 「怎么批注？」→ 选中正文（≥2 字）会浮出工具条：4 个颜色圆点是纯高亮，「写批注…」可以写文字；
+  右下角「✍️ 批注」打开侧栏，按文档顺序看/定位/删除。
+- 「我标的东西会丢吗？」→ 存在**当前浏览器**的 localStorage（key `p2h-annotations:<docId>`），刷新、
+  重开同一文件、同一论文重转都不会丢；换浏览器/清站点数据会丢。
+- 「怎么把我标的发给同事？」→ 打开侧栏点「导出带批注版」，得到 `<原文件名>-annotated.html`；对方打开
+  即见高亮和顶部「分享版：含 N 条批注」提示，还能继续加批注，再次导出会合并去重。
+- 你**无法直接读取**用户浏览器里的批注内容；如果用户想在对话里讨论批注，请他把导出的 annotated HTML
+  发回/告知路径，再用 `read` 工具读文件里的内嵌 JSON（`<script type="application/json" id="p2h-annotations">`）。
+
+### 第 5 步：按需讲解论文
 
 - 用户接着问论文内容时，**直接基于你已经读到的正文回答**；需要细节再用 `pdf` skill / `read` 工具读 PDF 或 HTML，不要把整篇 HTML 塞回对话。
 - 工具返回的 `engine` 说明解析方式：`local` = 本机 PyMuPDF；`doc2x` / `pdf2x` = 云端解析（用户配了 key）。
@@ -102,6 +119,7 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
 - [ ] 回复里同时给了 **预览地址** 和 **文件路径**
 - [ ] 没有把大段正文塞进工具参数/返回；讲解内容在对话里写
 - [ ] 用户没要求时没有打开 `understand`，也没有让用户贴 key
+- [ ] 提到批注时说明了「存在浏览器本地、导出带批注版才能分享」，没有声称能从对话里读取批注
 - [ ] 提到数据位置时用 `$DSH_HOME/paper2html/`（默认 `~/.dsh/paper2html/`）
 
 ## references
@@ -111,3 +129,5 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
 - `references/cli-options.md` —— 工具参数 + 内置 Python CLI 参数（高级排查/手动重转用）
 - `references/api-keys.md` —— DeepSeek / Doc2X / PDF2X key 从哪来、怎么配、云端解析与理解层的行为
 - `references/troubleshooting.md` —— 常见错误与处理
+
+> 批注功能（0.2.0）不需要额外 reference：交互都在生成页面里，上面「第 4 步」已覆盖用法与边界。

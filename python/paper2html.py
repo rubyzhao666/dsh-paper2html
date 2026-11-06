@@ -295,8 +295,16 @@ class Paper2HTML:
             if structured_authors and not parse_result.metadata.get("authors"):
                 parse_result.metadata["authors"] = structured_authors
 
-        # Step 3: 渲染
-        html_path = self.renderer.render(parse_result, understanding_result, output_path)
+        # Step 3: 渲染（docId 稳定：同一篇论文重转后批注仍能找回）
+        doc_id = self._compute_doc_id(input_path, parse_result)
+        output_stem = Path(output_path).stem
+        html_path = self.renderer.render(
+            parse_result,
+            understanding_result,
+            output_path,
+            doc_id=doc_id,
+            file_name=output_stem,
+        )
         html_path = str(Path(html_path).resolve())
         size = os.path.getsize(html_path)
         logger.info("HTML 已生成: %s (%d bytes)", html_path, size)
@@ -344,8 +352,12 @@ class Paper2HTML:
                 error_message=str(exc),
             )
 
-    def render(self, parse_result, understanding_result, output_path: str) -> str:
-        return self.renderer.render(parse_result, understanding_result, output_path)
+    def render(self, parse_result, understanding_result, output_path: str,
+               doc_id: Optional[str] = None, file_name: Optional[str] = None) -> str:
+        return self.renderer.render(
+            parse_result, understanding_result, output_path,
+            doc_id=doc_id, file_name=file_name,
+        )
 
     # -- 解析：输入类型 ------------------------------------------------------
 
@@ -576,6 +588,35 @@ class Paper2HTML:
                 return len(PdfReader(f).pages)
         except Exception:
             return 0
+
+    @staticmethod
+    def _compute_doc_id(input_path: str, parse_result) -> str:
+        """给页面批注生成稳定的 document id。
+
+        - arXiv 论文用 arXiv ID（同一篇论文的版本更新、重复下载都保持同一 id）；
+        - 本地 PDF 用文件内容 SHA-1（移动/改名不丢批注）；
+        - 都不可用时退回输入路径哈希。
+        """
+        import hashlib
+
+        metadata = getattr(parse_result, "metadata", None) or {}
+        arxiv_id = str(metadata.get("arxiv_id") or "").strip()
+        if arxiv_id:
+            return "arxiv-" + arxiv_id
+
+        source_file = str(getattr(parse_result, "source_file", "") or input_path or "")
+        candidate = Path(source_file)
+        try:
+            if candidate.is_file():
+                digest = hashlib.sha1()
+                with open(candidate, "rb") as handle:
+                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                return "pdf-" + digest.hexdigest()[:16]
+        except Exception:
+            pass
+        fallback = hashlib.sha1(source_file.encode("utf-8", "replace")).hexdigest()[:16]
+        return "doc-" + fallback
 
     def _generate_output_path(self, input_path: str) -> str:
         import re

@@ -16,6 +16,8 @@ optional high-fidelity cloud parsing (formulas, tables, scanned PDFs).
 | Interactive reader | sidebar TOC, ⌘K search, quick/standard/deep reading modes, progress bar, anchor copy |
 | Math & figures | KaTeX math (best with cloud parsing), Mermaid diagrams, base64-embedded figures |
 | Single shareable file | the output is one self-contained HTML — send it, archive it, open it offline |
+| In-page annotations / highlights | "✍️ 批注" button in the corner: select text to highlight in 4 colors or write a note; sidebar lists notes in document order; survives reload |
+| Export with annotations | "导出带批注版" downloads `<name>-annotated.html` with annotations embedded; recipients see them on open, can add their own, and re-export merged |
 | DSH Web preview | plugin registers a read-only `/paper2html/` route and returns a preview link |
 | Works without keys | local parsing + no AI summary by default; layout/TOC/figures are complete |
 | Stronger with keys | DeepSeek → TL;DR / key findings / section summaries (built-in stdlib HTTP client, no extra openai install); Doc2X/PDF2X → high-fidelity parsing incl. OCR |
@@ -60,6 +62,21 @@ Returns `htmlPath`, `previewPath` / `previewUrl`, `title`, `engine` (`local|doc2
   `/paper2html/` index lists every converted paper.
 - Share: send the `htmlPath` HTML file itself (figures are embedded, it is a single file).
 - KaTeX/Mermaid load from a CDN: online gives the fullest rendering, offline content is still readable.
+
+### Annotations / highlights / annotated export
+
+Generated pages have an "✍️ 批注" button in the bottom-right corner (pure frontend, works offline over `file://`):
+
+1. Select body text (≥2 chars) → a toolbar appears: four color dots for plain highlights, "写批注…" opens a note editor.
+2. Open the sidebar to see all annotations in document order (color bar + excerpt + note + section). Click an item to
+   scroll to it and flash the highlight; delete single items or clear your own annotations.
+3. Annotations live in the browser's `localStorage` (key `p2h-annotations:<docId>`), so they survive reloads and
+   re-conversions of the same paper (same docId). They are per-browser: clearing site data or switching browsers loses them.
+4. "导出带批注版" downloads `<original-name>-annotated.html` with the annotation JSON embedded and highlights
+   re-rendered on open. Recipients see a "分享版：含 N 条批注" banner, can add their own notes, and re-exporting
+   merges embedded + local annotations and dedupes them.
+5. Pages without annotations behave exactly like the previous version (no share banner). KaTeX formulas,
+   `<pre>/<code>` blocks and the annotation UI itself are not annotatable.
 
 ## With vs. without keys
 
@@ -106,6 +123,9 @@ $DSH_HOME/paper2html/            # default ~/.dsh/paper2html/
 └── preview-registry.json        # preview route registry
 ```
 
+> Annotations are not on disk: they live in the browser's localStorage; use the in-page "export annotated version"
+> when you need to carry or share them.
+
 ## Manual checks / development
 
 ```bash
@@ -132,6 +152,9 @@ npm pack --dry-run
 - Two-column papers are ordered by a left/right-column heuristic; rare complex layouts may interleave.
 - Figure limits: 80 figures per paper, 4 MB per figure, 20 MB total images (extras are skipped and reported in `warnings`).
 - The preview route only exists inside DSH Web; the HTML file itself does not depend on DSH.
+- Annotations are client-side only: they live in the current browser's localStorage; the only way to share them is
+  the in-page "export annotated version". Embedded annotations in an exported file are read-only; notes added by a
+  recipient stay on their machine.
 
 ## License & attribution
 
