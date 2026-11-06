@@ -159,6 +159,25 @@ body.p2h-panel-open #p2h-annotate-toggle { right: 372px; }
   font-size: 12px;
   line-height: 1.5;
 }
+.p2h-sync-status {
+  margin: 9px 14px 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border-left: 3px solid var(--border-primary, #30363d);
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-secondary, #8b949e);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.p2h-sync-status[data-p2h-sync="synced"] {
+  border-left-color: var(--accent-secondary, #3fb950);
+  color: var(--text-primary, #e6edf3);
+}
+.p2h-sync-status[data-p2h-sync="failed"] {
+  border-left-color: #ef4444;
+  color: #ef4444;
+}
+
 #p2h-annotation-list {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -406,6 +425,7 @@ ANNOTATION_MARKUP = r"""
     <div class="p2h-panel-title">✍️ 批注<span class="p2h-panel-total" id="p2h-annotation-total"></span></div>
     <button id="p2h-panel-close" class="p2h-icon-btn" type="button" title="关闭批注侧栏" aria-label="关闭批注侧栏">✕</button>
   </div>
+  <div id="p2h-sync-status" class="p2h-sync-status" data-p2h-sync="local" role="status"></div>
   <div id="p2h-share-banner" style="display:none;"></div>
   <div id="p2h-annotation-list"></div>
   <div class="p2h-panel-actions">
@@ -447,6 +467,10 @@ ANNOTATION_JS = r"""
   var DEFAULT_COLOR = 'yellow';
   var MAX_QUOTE = 80;
   var ANCHOR_CONTEXT = 48;
+  // 批注同步（0.3.0 G3）：http(s) 预览页把批注同步到 Host；file:// 保持 0.2.0 的 localStorage 行为。
+  var SERVER_MODE = !!(window.location && (window.location.protocol === 'http:' || window.location.protocol === 'https:'));
+  var API_BASE = '/paper2html/api/annotations/';
+  var SYNC_DEBOUNCE_MS = 400;
 
   var IGNORE_SELECTOR = '.katex, .katex-display, .katex-mathml, pre, code, ' +
     '#p2h-annotation-panel, #p2h-selection-toolbar, #p2h-note-editor, #p2h-annotate-toggle, ' +
@@ -463,7 +487,10 @@ ANNOTATION_JS = r"""
     pendingRange: null,
     noteRange: null,
     pendingRect: null,
-    lastColor: DEFAULT_COLOR
+    lastColor: DEFAULT_COLOR,
+    syncTimer: null,
+    syncFailed: false,
+    syncLoaded: false
   };
 
   // ---------------------------------------------------------------- utils ---
@@ -547,6 +574,115 @@ ANNOTATION_JS = r"""
     push(a || []);
     push(b || []);
     return out;
+  }
+
+  // ------------------------------------------------------- server sync ---
+  function syncStatusEl() { return byId('p2h-sync-status'); }
+
+  function updateSyncStatus(explicitMode) {
+    var el = syncStatusEl();
+    if (!el) { return; }
+    var mode = explicitMode;
+    if (!mode) {
+      if (!SERVER_MODE) { mode = 'local'; }
+      else if (state.syncFailed) { mode = 'failed'; }
+      else if (state.syncLoaded) { mode = 'synced'; }
+      else { mode = 'local'; }
+    }
+    el.setAttribute('data-p2h-sync', mode);
+    if (mode === 'synced') {
+      el.textContent = '☁ 批注已同步到本机（$DSH_HOME/paper2html/annotations）';
+    } else if (mode === 'failed') {
+      el.textContent = '⚠ 同步失败：批注仅保存在本浏览器（本地保存不受影响）';
+    } else {
+      el.textContent = '💾 批注保存在本浏览器；分享请用「导出带批注版」';
+    }
+  }
+
+  function apiUrl() {
+    return API_BASE + encodeURIComponent(docId());
+  }
+
+  function scheduleSync() {
+    if (!SERVER_MODE) { return; }
+    if (state.syncTimer) { window.clearTimeout(state.syncTimer); }
+    state.syncTimer = window.setTimeout(syncNow, SYNC_DEBOUNCE_MS);
+  }
+
+  function syncNow() {
+    state.syncTimer = null;
+    if (!SERVER_MODE || typeof window.fetch !== 'function') { return; }
+    var payload = mergeLists(state.embedded, state.local);
+    var body;
+    try {
+      body = JSON.stringify({ annotations: payload });
+    } catch (err) {
+      state.syncFailed = true;
+      updateSyncStatus();
+      return;
+    }
+    try {
+      window.fetch(apiUrl(), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: body,
+        cache: 'no-store'
+      }).then(function (response) {
+        if (!response.ok) { throw new Error('HTTP ' + response.status); }
+        state.syncLoaded = true;
+        state.syncFailed = false;
+        updateSyncStatus();
+      }).catch(function () {
+        state.syncFailed = true;
+        updateSyncStatus();
+      });
+    } catch (err) {
+      state.syncFailed = true;
+      updateSyncStatus();
+    }
+  }
+
+  function mergeServerAnnotations(serverList) {
+    if (!serverList || !serverList.length) { return; }
+    var serverById = {};
+    for (var i = 0; i < serverList.length; i += 1) { serverById[serverList[i].id] = true; }
+    var merged = [];
+    // 服务端优先：同 id 用服务端版本，本地独有的追加在后面
+    for (var s = 0; s < serverList.length; s += 1) { merged.push(serverList[s]); }
+    for (var j = 0; j < state.local.length; j += 1) {
+      if (serverById[state.local[j].id]) { continue; }
+      merged.push(state.local[j]);
+    }
+    state.local = merged;
+    writeStorage(state.local);
+    rerender();
+  }
+
+  function loadServerAnnotations() {
+    if (typeof window.fetch !== 'function') {
+      state.syncFailed = true;
+      return Promise.resolve();
+    }
+    return window.fetch(apiUrl(), {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store'
+    }).then(function (response) {
+      if (!response.ok) { throw new Error('HTTP ' + response.status); }
+      return response.json();
+    }).then(function (data) {
+      var raw = data && Array.isArray(data.annotations) ? data.annotations : [];
+      var server = [];
+      for (var i = 0; i < raw.length; i += 1) {
+        var item = normalizeAnnotation(raw[i]);
+        if (item) { server.push(item); }
+      }
+      state.syncLoaded = true;
+      state.syncFailed = false;
+      mergeServerAnnotations(server);
+    }).catch(function () {
+      state.syncFailed = true;
+    });
   }
 
   function newId() {
@@ -969,6 +1105,7 @@ ANNOTATION_JS = r"""
     state.local = next;
     writeStorage(state.local);
     rerender();
+    scheduleSync();
   }
 
   function clearLocal() {
@@ -983,6 +1120,7 @@ ANNOTATION_JS = r"""
     state.local = [];
     writeStorage([]);
     rerender();
+    scheduleSync();
   }
 
   function openPanel() {
@@ -1091,6 +1229,7 @@ ANNOTATION_JS = r"""
     hideEditor();
     clearSelection();
     rerender();
+    scheduleSync();
   }
 
   // --------------------------------------------------------------- export ---
@@ -1309,6 +1448,10 @@ ANNOTATION_JS = r"""
   }
 
   // ------------------------------------------------------------------ init ---
+  function markReady() {
+    window[READY_FLAG] = true;
+  }
+
   function init() {
     try {
       state.embedded = readEmbedded();
@@ -1321,7 +1464,17 @@ ANNOTATION_JS = r"""
         window.console.warn('[p2h-annotations] 初始化失败（页面其余功能不受影响）:', err);
       }
     }
-    window[READY_FLAG] = true;
+    if (SERVER_MODE) {
+      // http(s) 预览：先把本地渲染出来，再拉服务端批注合并；失败静默降级并提示。
+      updateSyncStatus('local');
+      loadServerAnnotations().then(function () {
+        updateSyncStatus();
+        markReady();
+      });
+    } else {
+      updateSyncStatus('local');
+      markReady();
+    }
   }
 
   if (document.readyState === 'loading') {

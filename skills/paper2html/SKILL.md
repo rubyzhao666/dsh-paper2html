@@ -14,8 +14,9 @@ description: 把学术论文（本地 PDF 或 arXiv 链接/ID）转成精美、�
 - 只处理论文 PDF / arXiv；不负责 OCR（扫描件需要 OCR 或云端解析 key）。
 - 工具只做「确定性重活」（下载、解析、排版、落盘）；**论文内容的讲解、摘要、翻译由你基于原文完成**。
 - 默认无 key 可用（本地 PyMuPDF 解析 + 不生成 AI 摘要）；AI 摘要需要 DeepSeek key，属于可选项。
-- 生成页面自带**页面内批注/高亮**（纯前端、离线可用）。批注存在用户浏览器的 localStorage 里，**你读不到、也改不了**；
-  用户要把批注分享给别人，走页面里的「导出带批注版」。工具参数没有变化。
+- 生成页面自带**页面内批注/高亮**（纯前端、离线可用）。用 DSH Web 预览页（`http://…/paper2html/…`）打开时，
+  批注会同步到 Host 侧，你可以用 `paper2html_annotations` 读取（总结/答疑）；用 `file://` 直接打开时批注只存在
+  浏览器 localStorage，你读不到，需要用户改用预览链接或导出带批注版。你始终**不能修改/删除**用户批注。
 
 ## 工作流
 
@@ -63,8 +64,10 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
   重开同一文件、同一论文重转都不会丢；换浏览器/清站点数据会丢。
 - 「怎么把我标的发给同事？」→ 打开侧栏点「导出带批注版」，得到 `<原文件名>-annotated.html`；对方打开
   即见高亮和顶部「分享版：含 N 条批注」提示，还能继续加批注，再次导出会合并去重。
-- 你**无法直接读取**用户浏览器里的批注内容；如果用户想在对话里讨论批注，请他把导出的 annotated HTML
-  发回/告知路径，再用 `read` 工具读文件里的内嵌 JSON（`<script type="application/json" id="p2h-annotations">`）。
+- 查批注内容：**调用 `paper2html_annotations`**。无参数先列本机有批注的文档，再传 `docId` 或 `htmlPath`
+  读具体批注（颜色/摘录/批注文字/章节）。详细工作流见 `references/annotations.md`。
+- 注意：只有 **DSH Web 预览页**打开的论文会同步到 Host；`file://` 打开的页面批注只在用户浏览器里。
+  工具读不到时说明原因并给替代方案（改用预览链接 / 导出带批注版）。
 
 ### 第 5 步：按需讲解论文
 
@@ -119,7 +122,8 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
 - [ ] 回复里同时给了 **预览地址** 和 **文件路径**
 - [ ] 没有把大段正文塞进工具参数/返回；讲解内容在对话里写
 - [ ] 用户没要求时没有打开 `understand`，也没有让用户贴 key
-- [ ] 提到批注时说明了「存在浏览器本地、导出带批注版才能分享」，没有声称能从对话里读取批注
+- [ ] 提到批注时说明了「http 预览会同步、file:// 只在本地；导出带批注版才能分享」，没有声称能修改用户批注
+- [ ] 用户问批注内容时调用 `paper2html_annotations`；无参数先列文档，读不到时给出可操作说明
 - [ ] 提到数据位置时用 `$DSH_HOME/paper2html/`（默认 `~/.dsh/paper2html/`）
 
 ## references
@@ -129,5 +133,4 @@ paper2html_convert({ input: "<绝对路径或 arXiv URL/ID>", style?: "dark_lab"
 - `references/cli-options.md` —— 工具参数 + 内置 Python CLI 参数（高级排查/手动重转用）
 - `references/api-keys.md` —— DeepSeek / Doc2X / PDF2X key 从哪来、怎么配、云端解析与理解层的行为
 - `references/troubleshooting.md` —— 常见错误与处理
-
-> 批注功能（0.2.0）不需要额外 reference：交互都在生成页面里，上面「第 4 步」已覆盖用法与边界。
+- `references/annotations.md` —— **读取用户批注**（0.3.0）：`paper2html_annotations` 工作流、http 预览同步 vs file:// 本地、上限与隐私边界

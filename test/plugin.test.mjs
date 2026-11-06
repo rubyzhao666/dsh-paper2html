@@ -55,13 +55,14 @@ test('exports a host plugin shape', () => {
 test('registers every tool', () => {
   const { ctx, tools } = fakeCtx()
   apply(ctx)
-  assert.equal(TOOLS.length, 2)
+  assert.equal(TOOLS.length, 3)
   for (const tool of TOOLS) {
     assert.ok(tools.get(tool.name), `missing tool ${tool.name}`)
     assert.equal(typeof tools.get(tool.name).execute, 'function')
   }
   assert.ok(tools.get('paper2html_convert'))
   assert.ok(tools.get('paper2html_status'))
+  assert.ok(tools.get('paper2html_annotations'))
 })
 
 test('registers the bundled skill', async () => {

@@ -105,6 +105,8 @@ test('F3 注入标记与 DOM 契约齐全', { skip, timeout: 180_000 }, async ()
     'id="p2h-note-save"',
     'id="p2h-note-cancel"',
     'id="p2h-share-banner"',
+    'id="p2h-sync-status"',
+    'data-p2h-sync="local"',
     'data-p2h-color="yellow"',
     'data-p2h-color="green"',
     'data-p2h-color="blue"',
@@ -153,9 +155,18 @@ test('F3 注入脚本可被 node --check 解析，且无网络/外部依赖', { 
   writeFileSync(scriptFile, script)
   execFileSync(process.execPath, ['--check', scriptFile], { stdio: 'pipe', timeout: 30_000 })
 
-  for (const forbidden of ['http://', 'https://', 'fetch(', 'XMLHttpRequest', 'WebSocket', 'importScripts']) {
+  for (const forbidden of ['http://', 'https://', 'XMLHttpRequest', 'WebSocket', 'importScripts']) {
     assert.ok(!script.includes(forbidden), `批注脚本不应包含 ${forbidden}`)
   }
+  // 0.3.0：http 预览下会向同源 API 发 GET/PUT；不允许出现外部 URL
+  assert.ok(script.includes('/paper2html/api/annotations/'), '缺少同源批注 API 路径')
+  assert.ok(script.includes('SERVER_MODE'), '缺少 SERVER_MODE 判断')
+  assert.ok(script.includes('SYNC_DEBOUNCE_MS'), '缺少同步防抖常量')
+  assert.ok(/SYNC_DEBOUNCE_MS\s*=\s*400/.test(script), '同步防抖应为 400ms')
+  assert.ok(script.includes('同步失败'), '缺少同步失败提示')
+  assert.ok(script.includes('已同步到本机'), '缺少已同步提示')
+  assert.ok(script.includes('仅保存在本浏览器'), '缺少仅本地提示')
+  assert.ok(script.includes("location.protocol === 'http:'"), 'SERVER_MODE 应基于 location.protocol')
   assert.match(script, /IGNORE_SELECTOR/, '缺少忽略区域选择器')
   assert.ok(script.includes('.katex'), '忽略区域缺少 .katex')
   assert.ok(/[\s,'"]pre[\s,'"]/.test(script), '忽略区域缺少 pre')
@@ -179,6 +190,7 @@ test('F3 CSS 无外部资源引用（无 @import / http URL）', { skip, timeout
   assert.ok(!/url\(\s*['"]?https?:/i.test(css), '批注 CSS 不应引用外部 URL')
   assert.ok(css.includes('mark.p2h-hl'), '缺少高亮样式')
   assert.ok(css.includes('[data-p2h-color="green"]'), '缺少颜色样式 green')
+  assert.ok(css.includes('.p2h-sync-status'), '缺少批注同步状态样式')
 })
 
 test('F3 原始文件里没有真正的内嵌批注 JSON 元素（只有脚本源码里的字符串）', { skip, timeout: 180_000 }, async () => {

@@ -18,6 +18,7 @@ optional high-fidelity cloud parsing (formulas, tables, scanned PDFs).
 | Single shareable file | the output is one self-contained HTML — send it, archive it, open it offline |
 | In-page annotations / highlights | "✍️ 批注" button in the corner: select text to highlight in 4 colors or write a note; sidebar lists notes in document order; survives reload |
 | Export with annotations | "导出带批注版" downloads `<name>-annotated.html` with annotations embedded; recipients see them on open, can add their own, and re-export merged |
+| Annotation sync & agent access | Annotations made in a DSH Web preview page (http) sync to the host (`$DSH_HOME/paper2html/annotations/`), and the agent can read them with `paper2html_annotations` to summarize or answer questions |
 | DSH Web preview | plugin registers a read-only `/paper2html/` route and returns a preview link |
 | Works without keys | local parsing + no AI summary by default; layout/TOC/figures are complete |
 | Stronger with keys | DeepSeek → TL;DR / key findings / section summaries (built-in stdlib HTTP client, no extra openai install); Doc2X/PDF2X → high-fidelity parsing incl. OCR |
@@ -77,6 +78,13 @@ Generated pages have an "✍️ 批注" button in the bottom-right corner (pure 
    merges embedded + local annotations and dedupes them.
 5. Pages without annotations behave exactly like the previous version (no share banner). KaTeX formulas,
    `<pre>/<code>` blocks and the annotation UI itself are not annotatable.
+6. **Sync (0.3.0)**: when opened from a DSH Web preview page (`http://127.0.0.1:<port>/paper2html/…`),
+   annotations are PUT to the host store (`$DSH_HOME/paper2html/annotations/<docId>.json`) after a 400 ms debounce;
+   the panel shows "已同步到本机". On failure it shows "同步失败" and keeps the local copy. `file://` pages send
+   no sync requests and behave exactly like 0.2.x.
+7. **Agent access (0.3.0)**: ask "summarize my highlights" / "what issues did I annotate" and the model calls
+   `paper2html_annotations` to read synced annotations (no args lists documents; `docId` or an absolute HTML path
+   reads one document). Only preview-page annotations sync; `file://` annotations stay in the browser.
 
 ## With vs. without keys
 
@@ -120,10 +128,12 @@ $DSH_HOME/paper2html/            # default ~/.dsh/paper2html/
 ├── venv/                        # lazily created Python environment
 ├── cache/                       # arXiv PDF cache (safe to delete)
 ├── exports/                     # default output dir (HTML + <name>_assets/)
+├── annotations/                 # 0.3.0: annotations synced from DSH Web preview (<docId>.json, ≤500/≤512KB)
 └── preview-registry.json        # preview route registry
 ```
 
-> Annotations are not on disk: they live in the browser's localStorage; use the in-page "export annotated version"
+> Annotations live in two places: the browser's localStorage (every open mode) and a host-side JSON file
+> (synced only from DSH Web preview pages; readable by the agent). Use the in-page "export annotated version"
 > when you need to carry or share them.
 
 ## Manual checks / development
@@ -152,9 +162,11 @@ npm pack --dry-run
 - Two-column papers are ordered by a left/right-column heuristic; rare complex layouts may interleave.
 - Figure limits: 80 figures per paper, 4 MB per figure, 20 MB total images (extras are skipped and reported in `warnings`).
 - The preview route only exists inside DSH Web; the HTML file itself does not depend on DSH.
-- Annotations are client-side only: they live in the current browser's localStorage; the only way to share them is
-  the in-page "export annotated version". Embedded annotations in an exported file are read-only; notes added by a
-  recipient stay on their machine.
+- Annotations have two copies: the current browser's localStorage (every open mode) and a host-side JSON file
+  (synced only from DSH Web preview pages, readable by the agent). They are not interchangeable: annotations made
+  over `file://` never reach the host store (the agent cannot read them), though they persist in that browser.
+  Sync limits: 500 annotations / 512 KB per document; exceeding them shows "同步失败" while keeping the local copy.
+- Embedded annotations in an exported file are read-only; notes added by a recipient stay on their machine.
 
 ## License & attribution
 
