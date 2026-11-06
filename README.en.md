@@ -19,6 +19,7 @@ optional high-fidelity cloud parsing (formulas, tables, scanned PDFs).
 | In-page annotations / highlights | "✍️ 批注" button in the corner: select text to highlight in 4 colors or write a note; sidebar lists notes in document order; survives reload |
 | Export with annotations | "导出带批注版" downloads `<name>-annotated.html` with annotations embedded; recipients see them on open, can add their own, and re-export merged |
 | Annotation sync & agent access | Annotations made in a DSH Web preview page (http) sync to the host (`$DSH_HOME/paper2html/annotations/`), and the agent can read them with `paper2html_annotations` to summarize or answer questions |
+| Sidebar "论文阅读" entry | A "📄 论文阅读" entry appears in the DSH Web sidebar; it opens the paper library page (`/paper2html/`) with converted papers, preview links and synced annotations |
 | DSH Web preview | plugin registers a read-only `/paper2html/` route and returns a preview link |
 | Works without keys | local parsing + no AI summary by default; layout/TOC/figures are complete |
 | Stronger with keys | DeepSeek → TL;DR / key findings / section summaries (built-in stdlib HTTP client, no extra openai install); Doc2X/PDF2X → high-fidelity parsing incl. OCR |
@@ -27,9 +28,14 @@ optional high-fidelity cloud parsing (formulas, tables, scanned PDFs).
 
 Install the plugin through DeepSeek Harness (`plugin_manager` or a local-directory install). Afterwards:
 
-- tools `paper2html_convert` and `paper2html_status` are available;
+- tools `paper2html_convert`, `paper2html_status` and `paper2html_annotations` are available;
 - skill `paper2html` shows up in the skill list;
-- the `/paper2html/` preview route is registered.
+- the `/paper2html/` preview route is registered;
+- a **"📄 论文阅读" entry appears in the DSH Web sidebar**, opening the paper library page (`/paper2html/`).
+
+> The sidebar entry is part of the browser/client half: after installing or updating the plugin you must
+> **restart DSH** (or reload the Web UI) for it to appear. Other capabilities (tools, skill, preview route)
+> are unaffected before the restart.
 
 **First conversion** prepares Python automatically: it prefers a system Python that already has
 `pymupdf` and `markdown`; otherwise it lazily creates `~/.dsh/paper2html/venv` and installs the minimal

@@ -18,6 +18,7 @@
 | 页面内批注/高亮 | 生成页右下角「✍️ 批注」：划词高亮（4 色）或写批注，侧栏按文档顺序列出，刷新不丢 |
 | 带批注导出分享 | 「导出带批注版」下载 `<原名>-annotated.html`，批注内嵌在文件里；对方打开即见，可继续批注并再次合并导出 |
 | 批注同步 & agent 读取 | DSH Web 预览页（http）里做的批注自动同步到 Host（`$DSH_HOME/paper2html/annotations/`），agent 可用 `paper2html_annotations` 读取你的高亮/批注来总结或答疑 |
+| 侧栏「论文阅读」入口 | DSH Web 左侧栏出现「📄 论文阅读」，点开就是论文库页面（`/paper2html/`）：已转换论文列表、预览链接、批注同步都在这里 |
 | DSH Web 预览 | 插件注册 `/paper2html/` 只读服务，转换完直接给预览链接 |
 | 无 key 可跑 | 默认本地解析 + 不生成 AI 摘要；页面排版/目录/图片完整 |
 | 有 key 更强 | DeepSeek → TL;DR/关键发现/章节摘要（内置标准库 HTTP 客户端，无需额外装 openai）；Doc2X/PDF2X → 高保真解析（含扫描件 OCR） |
@@ -26,9 +27,12 @@
 
 插件由 DeepSeek Harness 安装（`plugin_manager` 或本地目录安装）。安装后：
 
-- 工具 `paper2html_convert`、`paper2html_status` 自动可用；
+- 工具 `paper2html_convert`、`paper2html_status`、`paper2html_annotations` 自动可用；
 - skill `paper2html` 出现在 skill 列表；
-- `/paper2html/` 预览路由自动注册。
+- `/paper2html/` 预览路由自动注册；
+- DSH Web **左侧栏出现「📄 论文阅读」入口**，点开即论文库页面（`/paper2html/`）。
+
+> 左侧栏入口属于浏览器的 client 半边：安装或更新插件后需要**重启 DSH**（或重载 Web 界面）才会出现，重启前别的功能（工具/skill/预览路由）不受影响。
 
 **首次转换**会自动准备 Python 环境：优先使用本机已装好 `pymupdf` / `markdown` 的 Python；
 没有时在 `~/.dsh/paper2html/venv` 懒建 venv 并联网安装最小依赖（约 50 MB，只装一次）。
