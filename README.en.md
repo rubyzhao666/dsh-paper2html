@@ -37,11 +37,20 @@ requirements (about 50 MB, one-time). If installation fails, the error includes 
 
 ## Usage
 
-Just say:
+### Just say it (no tool names needed)
 
-- “Convert `/Users/me/Papers/attention.pdf` into a web page”
-- “Make arXiv 1706.03762 a shareable reading page, light theme”
-- “Convert this paper and add an AI summary” (requires a configured DeepSeek key)
+Speak naturally — the user never needs to know which tool runs behind the scenes. For example:
+
+- "This paper is hard to read, turn it into a web page"
+- "Convert this PDF into a readable page"
+- "I want to highlight and take notes on this page"
+- "Summarize what I highlighted / turn my annotations into notes"
+- "How do I send the annotated version to a colleague"
+
+> Only papers opened from the DSH Web preview page sync annotations to the agent; annotations on `file://` pages
+> stay in the browser (users can send you the exported annotated file instead).
+
+### Tools & parameters (for developers / debugging — users don't need these)
 
 The model calls:
 
