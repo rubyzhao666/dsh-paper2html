@@ -143,6 +143,8 @@ Or `~/.dsh/paper2html/config.json` (recommended; also works for GUI-launched DSH
 Optional fields: `deepseekBaseUrl` (default `https://api.deepseek.com/v1`), `llmModel` (default `deepseek-chat`).
 The plugin only reads this file and never writes keys.
 
+**No author key is involved**: the package ships no API key and never sends your keys or papers to the author. Local parsing stays offline; cloud parsing talks directly to Doc2X/PDF2X; AI summaries talk directly to your configured model endpoint.
+
 ## Requirements
 
 - DeepSeek Harness `>=0.2.1-rc.2 <0.3.0` (Node 22.19+ / 24+)

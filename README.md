@@ -128,6 +128,8 @@ export DOC2X_APIKEY="sk-..."     # 或 PDF2X_APIKEY
 可选字段：`deepseekBaseUrl`（默认 `https://api.deepseek.com/v1`）、`llmModel`（默认 `deepseek-chat`）。
 插件只读这个文件，不会自动写 key。
 
+**不会用作者的 key**：发布包里没有任何 API key；上面的 key 都是你自己电脑上的，插件也不会把 key 或论文内容发到作者服务器（本地解析时完全不出网；云端解析直连 Doc2X/PDF2X，AI 摘要直连你配置的模型地址）。
+
 ## 环境要求
 
 - DeepSeek Harness `>=0.2.1-rc.2 <0.3.0`（Node 22.19+ / 24+）
